@@ -895,6 +895,14 @@
             }
         }
 
+        // Hashing helper
+        async function hashPassword(pwd) {
+            const msgBuffer = new TextEncoder().encode(pwd);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
         // Signup handler (creates users with role)
         async function handleSignup(e) {
             e.preventDefault();
@@ -935,9 +943,10 @@
                     }
                 }
 
+                const hashedPassword = await hashPassword(password);
                 const newUser = {
                     username,
-                    password,
+                    password: hashedPassword,
                     first_name: firstName,
                     last_name: lastName,
                     id_no: idNo,
@@ -993,11 +1002,31 @@
                     .from('users')
                     .select('*')
                     .eq('username', username)
-                    .eq('password', password)
                     .maybeSingle();
 
                 if (error) throw error;
                 if (!user) { alert('Invalid username or password'); return; }
+
+                const hashedInput = await hashPassword(password);
+                const isPlainTextMatch = (user.password === password);
+                const isHashMatch = (user.password === hashedInput);
+
+                if (!isPlainTextMatch && !isHashMatch) {
+                    alert('Invalid username or password');
+                    return;
+                }
+
+                // Auto-upgrade plain-text password to hashed password in the database
+                if (isPlainTextMatch) {
+                    try {
+                        await supabaseClient
+                            .from('users')
+                            .update({ password: hashedInput })
+                            .eq('username', username);
+                    } catch (err) {
+                        console.warn('Failed to upgrade password format', err);
+                    }
+                }
 
                 currentUser = {
                     username: user.username,
