@@ -1,0 +1,51 @@
+-- SQL Schema Setup for DAYLIO Task Management System
+-- Run this SQL in the Supabase SQL Editor
+
+-- Drop tables if they exist to allow clean, one-time execution from scratch
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS users;
+
+-- --------------------------------------------------
+-- Step 1: Create `users` Table
+-- --------------------------------------------------
+CREATE TABLE users (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  first_name VARCHAR(255),
+  last_name VARCHAR(255),
+  id_no VARCHAR(255),
+  role VARCHAR(50) DEFAULT 'user', -- 'user' or 'HOD'
+  gmail VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_role ON users(role);
+
+
+-- --------------------------------------------------
+-- Step 2: Create `tasks` Table
+-- --------------------------------------------------
+CREATE TABLE tasks (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  username VARCHAR(255) NOT NULL REFERENCES users(username) ON DELETE CASCADE,
+  job_id VARCHAR(50),
+  "desc" TEXT,                       -- Matches actual DB column 'desc'
+  assign_date DATE,                  -- Matches actual DB column 'assign_date'
+  complete_date DATE,
+  status VARCHAR(50) DEFAULT 'Pending', -- 'Pending', 'In Progress', 'Submitted', 'Approved', 'Rejected', 'Completed'
+  remark TEXT,
+  user_full_name VARCHAR(255),
+  user_id_no VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tasks_username ON tasks(username);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_job_id ON tasks(job_id);
+
+
+

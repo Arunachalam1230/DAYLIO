@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DAYLIO - Task Management System</title>
+    <!-- Link External Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- LOGIN VIEW -->
+    <div id="loginView" class="view active">
+        <div class="container" style="max-width:400px;">
+            <h1 style="text-align:center;margin:0;font-size:28px;">DAYLIO</h1>
+            <h2 style="text-align:center;margin-top:8px;">Sign In</h2>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group"><label>Username</label><input id="loginUsername" required></div>
+                <div class="form-group"><label>Password</label><input id="loginPassword" type="password" required></div>
+                <div style="text-align:right;margin-top:-10px;margin-bottom:15px;">
+                    <a href="#" onclick="openForgotPasswordView(event)" style="font-size:13px;color:var(--text-muted);">Forgot Password?</a>
+                </div>
+                <button type="submit" style="width:100%;">Sign In</button>
+            </form>
+            <p style="text-align:center;margin-top:15px;">Don't have an account? <a href="#"
+                    onclick="switchView('signupView')">Sign Up here</a></p>
+        </div>
+    </div>
+
+    <!-- SIGNUP VIEW -->
+    <div id="signupView" class="view">
+        <div class="container" style="max-width:400px;">
+            <h2 style="text-align:center">Sign Up</h2>
+            <form id="signupForm" onsubmit="handleSignup(event)">
+                <div class="form-group"><label>First Name</label><input id="supFirstName" required></div>
+                <div class="form-group"><label>Last Name</label><input id="supLastName" required></div>
+                <div class="form-group"><label>ID Number</label><input id="supIdNo" required></div>
+                <div class="form-group"><label>Gmail Address</label><input id="supGmail" type="email" required></div>
+                <div class="form-group"><label>Username</label><input id="supUsername" required></div>
+                <div class="form-group"><label>Password</label><input id="supPassword" type="password" required></div>
+                <div class="form-group"><label>Confirm Password</label><input id="supConfirm" type="password" required>
+                </div>
+                <div class="form-group"><label>Role</label>
+                    <select id="supRole" required>
+                        <option value="user">User</option>
+                        <option value="HOD">HOD</option>
+                    </select>
+                    <span id="hod-note" style="color:#b33;margin-left:6px;font-size:12px;"></span>
+                </div>
+                <button type="submit" style="width:100%;">Create Account</button>
+            </form>
+            <p style="text-align:center;margin-top:15px;">Already have an account? <a href="#"
+                    onclick="switchView('loginView')">Sign In here</a></p>
+        </div>
+    </div>
+
+    <!-- FORGOT PASSWORD VIEW -->
+    <div id="forgotPasswordView" class="view">
+        <div class="container" style="max-width:400px;">
+            <h2 style="text-align:center">Reset Password</h2>
+            
+            <!-- Step 1: Request OTP -->
+            <div id="forgotStep1">
+                <p style="font-size:14px;color:var(--text-muted);margin-bottom:20px;text-align:center;line-height:1.5;">
+                    Enter your username to receive a 6-digit OTP code on your registered Gmail.
+                </p>
+                <form onsubmit="handleRequestOTP(event)">
+                    <div class="form-group"><label>Username</label><input id="forgotUsername" required></div>
+                    <button type="submit" style="width:100%;">Send OTP</button>
+                </form>
+            </div>
+            
+            <!-- Step 2: Verify OTP & Reset Password -->
+            <div id="forgotStep2" style="display:none;">
+                <p style="font-size:14px;color:var(--text-muted);margin-bottom:20px;text-align:center;line-height:1.5;">
+                    An OTP has been sent to your Gmail address. Enter it below to reset your password.
+                </p>
+                <form onsubmit="handleResetPassword(event)">
+                    <div class="form-group">
+                        <label>OTP Code</label>
+                        <input id="forgotOTP" class="otp-input" required placeholder="Enter 6-digit OTP" pattern="\d{6}" maxlength="6">
+                    </div>
+                    <div class="form-group"><label>New Password</label><input id="forgotNewPassword" type="password" required></div>
+                    <div class="form-group"><label>Confirm New Password</label><input id="forgotConfirmNewPassword" type="password" required></div>
+                    <button type="submit" style="width:100%;">Reset Password</button>
+                </form>
+            </div>
+            
+            <p style="text-align:center;margin-top:20px;">
+                <a href="#" onclick="switchView('loginView')">Back to Sign In</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboardView" class="view">
+        <div class="container">
+            <div class="dashboard-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="site-title">DAYLIO</div>
+                    <div class="user-info">
+                        <div>Welcome, <span id="dashName"></span></div>
+                        <div>ID: <span id="dashId"></span></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button class="logout-btn" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-buttons">
+                <button id="btnAddTask" onclick="switchTab('addSection')">Add Task</button>
+                <button id="btnReport" onclick="loadReportSection()">Report / Manage</button>
+                <button id="btnUpload" class="upload-btn" onclick="openUploadFileChooser()">Upload Excel</button>
+                <input id="uploadInput" type="file" accept=".csv,.xls,.xlsx" style="display:none"
+                    onchange="handleUpload(event)">
+            </div>
+
+            <!-- ADD TASK -->
+            <div id="addSection" class="tab-content">
+                <h3>Add New Task</h3>
+                <form id="taskForm" onsubmit="saveTask(event)">
+                    <div class="form-group"><label>Work Description</label><input id="tDesc" required></div>
+                    <div class="form-group"><label>Assignment Date</label><input id="tAssignDate" type="date" required>
+                    </div>
+                    <div class="form-group"><label>Complete Date</label><input id="tCompleteDate" type="date" required>
+                    </div>
+                    <div class="form-group"><label>Remark</label><input id="tRemark" required></div>
+                    <div class="form-group"><label>Status</label>
+                        <select id="tStatus" required>
+                            <option value="">Select status</option>
+                            <option>Pending</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                        <input id="tCheck" type="checkbox" required><label for="tCheck" style="margin-bottom:0;">I
+                            confirm the details are correct</label>
+                    </div>
+                    <button type="submit">Save Task</button>
+                </form>
+            </div>
+
+            <!-- REPORT -->
+            <div id="reportSection" class="tab-content" style="display:none;">
+                <h3>Tasks Report</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><input id="selectAll" type="checkbox" onclick="toggleSelectAll(this)" title="Select / Deselect all"></th>
+                                <th>S.No</th>
+                                <th>User Name</th>
+                                <th>Job ID</th>
+                                <th>Work Description</th>
+                                <th>Assignment Date</th>
+                                <th>Complete Date</th>
+                                <th>Status</th>
+                                <th>Remark</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:12px;">
+                    <div style="font-size:14px;color:var(--muted);">Select rows then click Submit Selected</div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="submitSelected()" style="background-color:#34495e;">Submit Selected</button>
+                        <button onclick="exportToExcel()" style="background-color:#27ae60;">Download to Excel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Link External JavaScript Logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>
