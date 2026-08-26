@@ -47,5 +47,9 @@ CREATE INDEX idx_tasks_username ON tasks(username);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_job_id ON tasks(job_id);
 
+-- Disable Row Level Security (RLS) to allow client side query access
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
+
 
 
