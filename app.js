@@ -471,7 +471,6 @@ function mapDbToTask(t) {
 function mapTaskToDb(t) {
     if (!t) return null;
     return {
-        id: t.id,
         username: t.username,
         job_id: t.jobId,
         desc: t.desc,                     // Reverted to match actual DB column 'desc'
