@@ -331,61 +331,61 @@ function wrapBuilder(realBuilder, table) {
         select(columns) {
             this.action = 'select';
             this.actionArgs = columns;
-            try { realBuilder.select(columns); } catch (e) {}
+            try { realBuilder = realBuilder.select(columns); } catch (e) {}
             return this;
         },
         insert(rows) {
             this.action = 'insert';
             this.actionArgs = rows;
-            try { realBuilder.insert(rows); } catch (e) {}
+            try { realBuilder = realBuilder.insert(rows); } catch (e) {}
             return this;
         },
         update(values) {
             this.action = 'update';
             this.actionArgs = values;
-            try { realBuilder.update(values); } catch (e) {}
+            try { realBuilder = realBuilder.update(values); } catch (e) {}
             return this;
         },
         delete() {
             this.action = 'delete';
             this.actionArgs = null;
-            try { realBuilder.delete(); } catch (e) {}
+            try { realBuilder = realBuilder.delete(); } catch (e) {}
             return this;
         },
         upsert(rows) {
             this.action = 'upsert';
             this.actionArgs = rows;
-            try { realBuilder.upsert(rows); } catch (e) {}
+            try { realBuilder = realBuilder.upsert(rows); } catch (e) {}
             return this;
         },
         eq(column, value) {
-            try { realBuilder.eq(column, value); } catch (e) {}
+            try { realBuilder = realBuilder.eq(column, value); } catch (e) {}
             this.filters.push((row) => String(row[column]) === String(value));
             return this;
         },
         in(column, values) {
-            try { realBuilder.in(column, values); } catch (e) {}
+            try { realBuilder = realBuilder.in(column, values); } catch (e) {}
             this.filters.push((row) => values.map(v => String(v)).includes(String(row[column])));
             return this;
         },
         order(column, { ascending = true } = {}) {
-            try { realBuilder.order(column, { ascending }); } catch (e) {}
+            try { realBuilder = realBuilder.order(column, { ascending }); } catch (e) {}
             this.orderByField = column;
             this.orderAscending = ascending;
             return this;
         },
         limit(val) {
-            try { realBuilder.limit(val); } catch (e) {}
+            try { realBuilder = realBuilder.limit(val); } catch (e) {}
             this.limitVal = val;
             return this;
         },
         maybeSingle() {
-            try { realBuilder.maybeSingle(); } catch (e) {}
+            try { realBuilder = realBuilder.maybeSingle(); } catch (e) {}
             this.isMaybeSingle = true;
             return this;
         },
         single() {
-            try { realBuilder.single(); } catch (e) {}
+            try { realBuilder = realBuilder.single(); } catch (e) {}
             this.isSingle = true;
             return this;
         },
