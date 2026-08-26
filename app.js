@@ -25,6 +25,8 @@ class LocalStorageDb {
 class MockSupabaseQueryBuilder {
     constructor(table) {
         this.table = table;
+        this.action = 'select';
+        this.actionArgs = null;
         this.filters = [];
         this.orderByField = null;
         this.orderAscending = true;
@@ -34,6 +36,32 @@ class MockSupabaseQueryBuilder {
     }
 
     select(columns) {
+        this.action = 'select';
+        this.actionArgs = columns;
+        return this;
+    }
+
+    insert(rows) {
+        this.action = 'insert';
+        this.actionArgs = rows;
+        return this;
+    }
+
+    update(values) {
+        this.action = 'update';
+        this.actionArgs = values;
+        return this;
+    }
+
+    delete() {
+        this.action = 'delete';
+        this.actionArgs = null;
+        return this;
+    }
+
+    upsert(rows) {
+        this.action = 'upsert';
+        this.actionArgs = rows;
         return this;
     }
 
@@ -100,7 +128,7 @@ class MockSupabaseQueryBuilder {
         return { data, error: null };
     }
 
-    async insert(rows) {
+    async executeInsert(rows) {
         const collection = LocalStorageDb.getCollection(this.table);
         const rowsArray = Array.isArray(rows) ? rows : [rows];
         const newRows = rowsArray.map((row, index) => {
@@ -116,7 +144,7 @@ class MockSupabaseQueryBuilder {
         return { data: newRows, error: null };
     }
 
-    async update(values) {
+    async executeUpdate(values) {
         let collection = LocalStorageDb.getCollection(this.table);
         const updatedRows = [];
         collection = collection.map(row => {
@@ -138,7 +166,7 @@ class MockSupabaseQueryBuilder {
         return { data: updatedRows, error: null };
     }
 
-    async delete() {
+    async executeDelete() {
         let collection = LocalStorageDb.getCollection(this.table);
         collection = collection.filter(row => {
             let matches = true;
@@ -154,7 +182,7 @@ class MockSupabaseQueryBuilder {
         return { data: null, error: null };
     }
 
-    async upsert(rows) {
+    async executeUpsert(rows) {
         const collection = LocalStorageDb.getCollection(this.table);
         const rowsArray = Array.isArray(rows) ? rows : [rows];
         rowsArray.forEach(row => {
@@ -175,7 +203,23 @@ class MockSupabaseQueryBuilder {
     }
 
     then(onfulfilled, onrejected) {
-        return this.executeSelect().then(onfulfilled, onrejected);
+        let res;
+        try {
+            if (this.action === 'select') {
+                res = this.executeSelect();
+            } else if (this.action === 'insert') {
+                res = this.executeInsert(this.actionArgs);
+            } else if (this.action === 'update') {
+                res = this.executeUpdate(this.actionArgs);
+            } else if (this.action === 'delete') {
+                res = this.executeDelete();
+            } else if (this.action === 'upsert') {
+                res = this.executeUpsert(this.actionArgs);
+            }
+            return Promise.resolve(res).then(onfulfilled, onrejected);
+        } catch (err) {
+            return Promise.reject(err).catch(onrejected);
+        }
     }
 }
 
@@ -275,6 +319,8 @@ if (isLocalDbMode) {
 function wrapBuilder(realBuilder, table) {
     const builderProxy = {
         table,
+        action: 'select',
+        actionArgs: null,
         filters: [],
         orderByField: null,
         orderAscending: true,
@@ -283,7 +329,33 @@ function wrapBuilder(realBuilder, table) {
         isMaybeSingle: false,
         
         select(columns) {
+            this.action = 'select';
+            this.actionArgs = columns;
             try { realBuilder.select(columns); } catch (e) {}
+            return this;
+        },
+        insert(rows) {
+            this.action = 'insert';
+            this.actionArgs = rows;
+            try { realBuilder.insert(rows); } catch (e) {}
+            return this;
+        },
+        update(values) {
+            this.action = 'update';
+            this.actionArgs = values;
+            try { realBuilder.update(values); } catch (e) {}
+            return this;
+        },
+        delete() {
+            this.action = 'delete';
+            this.actionArgs = null;
+            try { realBuilder.delete(); } catch (e) {}
+            return this;
+        },
+        upsert(rows) {
+            this.action = 'upsert';
+            this.actionArgs = rows;
+            try { realBuilder.upsert(rows); } catch (e) {}
             return this;
         },
         eq(column, value) {
@@ -318,63 +390,6 @@ function wrapBuilder(realBuilder, table) {
             return this;
         },
         
-        async insert(rows) {
-            try {
-                const res = await realBuilder.insert(rows);
-                if (res.error) throw res.error;
-                return res;
-            } catch (err) {
-                if (isNetworkError(err)) {
-                    enableLocalMode();
-                    return new MockSupabaseQueryBuilder(table).insert(rows);
-                }
-                throw err;
-            }
-        },
-        async update(values) {
-            try {
-                const res = await realBuilder.update(values);
-                if (res.error) throw res.error;
-                return res;
-            } catch (err) {
-                if (isNetworkError(err)) {
-                    enableLocalMode();
-                    const mockBuilder = new MockSupabaseQueryBuilder(table);
-                    mockBuilder.filters = this.filters;
-                    return mockBuilder.update(values);
-                }
-                throw err;
-            }
-        },
-        async delete() {
-            try {
-                const res = await realBuilder.delete();
-                if (res.error) throw res.error;
-                return res;
-            } catch (err) {
-                if (isNetworkError(err)) {
-                    enableLocalMode();
-                    const mockBuilder = new MockSupabaseQueryBuilder(table);
-                    mockBuilder.filters = this.filters;
-                    return mockBuilder.delete();
-                }
-                throw err;
-            }
-        },
-        async upsert(rows) {
-            try {
-                const res = await realBuilder.upsert(rows);
-                if (res.error) throw res.error;
-                return res;
-            } catch (err) {
-                if (isNetworkError(err)) {
-                    enableLocalMode();
-                    return new MockSupabaseQueryBuilder(table).upsert(rows);
-                }
-                throw err;
-            }
-        },
-        
         async then(onfulfilled, onrejected) {
             try {
                 const res = await realBuilder;
@@ -383,14 +398,28 @@ function wrapBuilder(realBuilder, table) {
             } catch (err) {
                 if (isNetworkError(err)) {
                     enableLocalMode();
-                    const mockBuilder = new MockSupabaseQueryBuilder(table);
+                    
+                    const mockBuilder = new MockSupabaseQueryBuilder(this.table);
                     mockBuilder.filters = this.filters;
                     mockBuilder.orderByField = this.orderByField;
                     mockBuilder.orderAscending = this.orderAscending;
                     mockBuilder.limitVal = this.limitVal;
                     mockBuilder.isSingle = this.isSingle;
                     mockBuilder.isMaybeSingle = this.isMaybeSingle;
-                    const res = await mockBuilder.executeSelect();
+                    
+                    let res;
+                    if (this.action === 'select') {
+                        res = await mockBuilder.executeSelect();
+                    } else if (this.action === 'insert') {
+                        res = await mockBuilder.executeInsert(this.actionArgs);
+                    } else if (this.action === 'update') {
+                        res = await mockBuilder.executeUpdate(this.actionArgs);
+                    } else if (this.action === 'delete') {
+                        res = await mockBuilder.executeDelete();
+                    } else if (this.action === 'upsert') {
+                        res = await mockBuilder.executeUpsert(this.actionArgs);
+                    }
+                    
                     return onfulfilled ? onfulfilled(res) : res;
                 }
                 return onrejected ? onrejected(err) : Promise.reject(err);
