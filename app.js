@@ -851,8 +851,23 @@ async function handleSignup(e) {
         if (insertError) throw insertError;
 
         await updateSignupRoleAvailability();
-        alert('Account created. Sign in now.');
-        switchView('loginView');
+        currentUser = {
+            username: newUser.username,
+            firstName: newUser.first_name,
+            lastName: newUser.last_name,
+            idNo: newUser.id_no,
+            role: newUser.role
+        };
+        const dashNameEl = document.getElementById('dashName');
+        const dashIdEl = document.getElementById('dashId');
+        if (dashNameEl) dashNameEl.innerText = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim();
+        if (dashIdEl) dashIdEl.innerText = currentUser.idNo || '';
+        document.getElementById('signupForm').reset();
+        alert('Account created successfully! Logging you in...');
+        switchView('dashboardView');
+        try { updateDashboardForRole(); } catch (err) {}
+        try { setupSSE(); } catch (err) {}
+        try { await renderTasks(); } catch (err) {}
     } catch (err) {
         alert('Signup failed: ' + err.message);
         console.error(err);
